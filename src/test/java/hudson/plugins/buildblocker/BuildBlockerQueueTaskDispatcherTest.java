@@ -24,15 +24,7 @@
 
 package hudson.plugins.buildblocker;
 
-import hudson.model.Action;
-import hudson.model.Computer;
-import hudson.model.Executor;
-import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Label;
-import hudson.model.Queue;
-import hudson.model.Run;
+import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.model.queue.CauseOfBlockage;
 import hudson.slaves.DumbSlave;
@@ -44,6 +36,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static hudson.model.Hudson.getInstance;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -54,6 +48,8 @@ import static org.junit.Assert.assertThat;
  * Unit tests
  */
 public class BuildBlockerQueueTaskDispatcherTest extends HudsonTestCase {
+
+    private static final Logger LOG = Logger.getLogger(BuildBlockerQueueTaskDispatcherTest.class.getName());
 
     /**
      * One test for all for faster execution.
@@ -97,7 +93,7 @@ public class BuildBlockerQueueTaskDispatcherTest extends HudsonTestCase {
                 .setBlockOnGlobalLevel()
                 .createBuildBlockerProperty();
 
-        project.addProperty(property);
+        updateJobProperty(project, property);
 
         causeOfBlockage = dispatcher.canRun(item);
         assertNotNull(causeOfBlockage);
@@ -116,7 +112,7 @@ public class BuildBlockerQueueTaskDispatcherTest extends HudsonTestCase {
         theJob1.getBuildersList().add(new Shell("sleep 1; exit 0"));
         assertTrue(theJob1.getBuilds().isEmpty());
 
-        // Job2 returns immediatly but can't run while Job1 is running.
+        // Job2 returns immediately but can't run while Job1 is running.
         FreeStyleProject theJob2 = createFreeStyleProject("MultipleExecutor_Job2");
         {
             BuildBlockerProperty theProperty = new BuildBlockerPropertyBuilder()
@@ -125,7 +121,7 @@ public class BuildBlockerQueueTaskDispatcherTest extends HudsonTestCase {
                     .setBlockOnGlobalLevel()
                     .setScanBuildableQueueItemStates()
                     .createBuildBlockerProperty();
-            theJob2.addProperty(theProperty);
+            updateJobProperty(theJob2, theProperty);
         }
         assertTrue(theJob1.getBuilds().isEmpty());
 
@@ -150,6 +146,15 @@ public class BuildBlockerQueueTaskDispatcherTest extends HudsonTestCase {
         theJob1.delete();
     }
 
+    private void updateJobProperty(FreeStyleProject job, BuildBlockerProperty property) {
+        try {
+            job.removeProperty(BuildBlockerProperty.class);
+            job.addProperty(property);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Removing BuildBlockerProperty error", e);
+        }
+    }
+
     public void testSelfExcludingJobs() throws Exception {
 
         BuildBlockerProperty theProperty = new BuildBlockerPropertyBuilder()
@@ -160,11 +165,11 @@ public class BuildBlockerQueueTaskDispatcherTest extends HudsonTestCase {
                 .createBuildBlockerProperty();
 
         FreeStyleProject theJob1 = createFreeStyleProject("SelfExcluding_Job1");
-        theJob1.addProperty(theProperty);
+        updateJobProperty(theJob1,theProperty);
         assertTrue(theJob1.getBuilds().isEmpty());
 
         FreeStyleProject theJob2 = createFreeStyleProject("SelfExcluding_Job2");
-        theJob2.addProperty(theProperty);
+        updateJobProperty(theJob2,theProperty);
         assertTrue(theJob2.getBuilds().isEmpty());
 
         // allow executing two simultanious jobs
