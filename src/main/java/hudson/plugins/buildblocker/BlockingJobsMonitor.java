@@ -190,7 +190,6 @@ public class BlockingJobsMonitor {
                             return job;
                         } else {
                             LOG.log(Level.FINE,"Approved job : " + job.getName()+ " for " + blockingJob);
-
                         }
                     } catch (java.util.regex.PatternSyntaxException pse) {
                         continue;
