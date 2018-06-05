@@ -17,3 +17,8 @@ Either
 
 * buildable builds can stop another build from running (for instance builds that are waiting for an available executor)
 * all planned builds can stop another build from running (blocked builds, pending builds waiting builds and buildable builds)
+
+
+### fabric8 jenkins configuration
+
+This plugin has default configuration to queue remaining jobs if one of the job's execution is  in progress(one job at a time). To change this configuration update [farbric8 tenant jenkins configmap](https://github.com/fabric8-services/fabric8-tenant-jenkins/blob/master/apps/jenkins/src/main/fabric8/openshift-cm.yml). 

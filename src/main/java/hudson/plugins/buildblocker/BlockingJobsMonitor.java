@@ -35,6 +35,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.Arrays.asList;
@@ -160,7 +161,10 @@ public class BlockingJobsMonitor {
                     if (buildableItem.task instanceof Job) {
                         Job project = (Job) buildableItem.task;
                         if (project.getFullName().matches(blockingJob)) {
+                            LOG.log(Level.FINE, "Rejected job : " + project.getName() + " for " + blockingJob);
                             return project;
+                        } else {
+                            LOG.log(Level.FINE, "Approved job : " + project.getName()+ " for " + blockingJob);
                         }
                     }
                 }
@@ -182,7 +186,10 @@ public class BlockingJobsMonitor {
                 for (String blockingJob : this.blockingJobs) {
                     try {
                         if (job.getFullName().matches(blockingJob)) {
+                            LOG.log(Level.FINE, "Rejected job : " + job.getName() + " for " + blockingJob);
                             return job;
+                        } else {
+                            LOG.log(Level.FINE,"Approved job : " + job.getName()+ " for " + blockingJob);
                         }
                     } catch (java.util.regex.PatternSyntaxException pse) {
                         continue;

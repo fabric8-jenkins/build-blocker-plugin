@@ -25,16 +25,21 @@
 package hudson.plugins.buildblocker;
 
 import hudson.Extension;
+import hudson.model.Descriptor;
 import hudson.model.Job;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -80,11 +85,47 @@ public class BuildBlockerProperty extends JobProperty<Job<?, ?>> {
         this.blockingJobs = blockingJobs;
     }
 
+    public Object readResolve() {
+        if(blockLevel == null) {
+            blockLevel = BlockLevel.GLOBAL;
+        }
+
+        if(scanQueueFor == null) {
+            scanQueueFor = QueueScanScope.DISABLED;
+        }
+
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "BuildBlockerProperty{" +
+                "useBuildBlocker=" + useBuildBlocker +
+                ", blockLevel=" + blockLevel +
+                ", scanQueueFor=" + scanQueueFor +
+                ", blockingJobs='" + blockingJobs + '\'' +
+                '}';
+    }
+
+    public static BuildBlockerProperty getDefaultProperties() throws Descriptor.FormException {
+        DescriptorImpl descriptor = Jenkins.getInstance().getDescriptorByType(DescriptorImpl.class);
+        return (BuildBlockerProperty) descriptor.newInstance(null, null);
+   }
+
     /**
      * Descriptor
      */
     @Extension
-    public static final class BuildBlockerDescriptor extends JobPropertyDescriptor {
+    public static final class DescriptorImpl extends JobPropertyDescriptor {
+        private boolean useBuildBlocker;
+        private BlockLevel blockLevel = BlockLevel.GLOBAL;
+        private QueueScanScope scanQueueFor = QueueScanScope.DISABLED;
+        private String blockingJobs;
+
+        public DescriptorImpl() {
+            super(BuildBlockerProperty.class);
+            load();
+        }
 
         /**
          * Returns the name to be shown on the website
@@ -95,7 +136,6 @@ public class BuildBlockerProperty extends JobProperty<Job<?, ?>> {
         public String getDisplayName() {
             return Messages.DisplayName();
         }
-
 
         /**
          * Check the regular expression entered by the user
@@ -130,6 +170,40 @@ public class BuildBlockerProperty extends JobProperty<Job<?, ?>> {
         @Override
         public boolean isApplicable(Class<? extends Job> jobType) {
             return true;
+        }
+
+        @Override
+        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
+            formData = formData.get("buildblocker") != null ? formData.getJSONObject("buildblocker") : formData;
+            req.bindJSON(this, formData);
+            save();
+
+            return super.configure(req, formData);
+        }
+
+        public void setUseBuildBlocker(boolean useBuildBlocker) {
+            this.useBuildBlocker = useBuildBlocker;
+        }
+
+        public void setBlockLevel(String blockLevel) {
+            this.blockLevel = BlockLevel.from(blockLevel);
+        }
+
+        public void setScanQueueFor(String scanQueueFor) {
+            this.scanQueueFor = QueueScanScope.from(scanQueueFor);
+        }
+
+        public void setBlockingJobs(String blockingJobs) {
+            this.blockingJobs = blockingJobs;
+        }
+
+        /*
+         * To disable accepting build blocking properties from 'configure project" option.
+         * Global build blocking config is single source of truth
+        * */
+        @Override
+        public JobProperty<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            return new BuildBlockerProperty(useBuildBlocker, blockLevel.toString(), scanQueueFor.toString(), blockingJobs);
         }
     }
 
