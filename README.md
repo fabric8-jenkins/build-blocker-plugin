@@ -22,3 +22,25 @@ Either
 ### fabric8 jenkins configuration
 
 This plugin has default configuration to queue remaining jobs if one of the job's execution is  in progress(one job at a time). To change this configuration update [farbric8 tenant jenkins configmap](https://github.com/fabric8-services/fabric8-tenant-jenkins/blob/master/apps/jenkins/src/main/fabric8/openshift-cm.yml). 
+
+- Apply following configuration to enable this plugin and execute one job at a time
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<hudson.plugins.buildblocker.BuildBlockerProperty_-DescriptorImpl plugin="build-blocker-plugin@1.7.4-SNAPSHOT">
+    <useBuildBlocker>true</useBuildBlocker> <!-- this enables the plugin-->
+    <blockLevel>GLOBAL</blockLevel>
+    <scanQueueFor>DISABLED</scanQueueFor>
+    <blockingJobs>.*</blockingJobs>
+</hudson.plugins.buildblocker.BuildBlockerProperty_-DescriptorImpl>
+```
+- To disable this plugin apply the following configuration or remove the xml block. 
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<hudson.plugins.buildblocker.BuildBlockerProperty_-DescriptorImpl plugin="build-blocker-plugin@1.7.4-SNAPSHOT">
+    <useBuildBlocker>false</useBuildBlocker> <!-- this disables the plugin-->
+    <blockLevel>GLOBAL</blockLevel>
+    <scanQueueFor>DISABLED</scanQueueFor>
+    <blockingJobs>.*</blockingJobs>
+</hudson.plugins.buildblocker.BuildBlockerProperty_-DescriptorImpl>
+```
+
